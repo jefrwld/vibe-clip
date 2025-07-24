@@ -1,15 +1,36 @@
 use std::process::Command;
 use std::io::Write;
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct Config {
+    domains: Vec<String>,
+}
 
 fn main(){
-
+    let config = load_config();
     let content = read_windows_clipboard();
-    let sanitized = content.replace("meine-firma.com", "example.com");
+    let mut sanitized = sanitize_content(&content, &config.domains);
     println!("Clipboard Inhalt:");
     println!("{}", sanitized);
 
     write_windows_clipboard(&sanitized);
 
+}
+
+fn load_config() -> Config {
+    let config_content = std::fs::read_to_string("config.yaml").unwrap();
+    serde_yaml::from_str(&config_content).unwrap()
+}
+
+fn sanitize_content(content: &str, domains: &[String]) -> String {
+    let mut result = content.to_string();
+
+    for domain in domains {
+        result = result.replace(domain, "example.com");
+    }
+
+    result
 }
 
 
