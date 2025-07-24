@@ -9,12 +9,23 @@ struct Config {
 
 fn main(){
     let config = load_config();
-    let content = read_windows_clipboard();
-    let mut sanitized = sanitize_content(&content, &config.domains);
-    println!("Clipboard Inhalt:");
-    println!("{}", sanitized);
 
-    write_windows_clipboard(&sanitized);
+    if cfg!(target_os = "windows"){
+        let content = read_windows_clipboard();
+        let sanitized = sanitize_content(&content, &config.domains);
+        println!("Clipboard Inhalt:");
+        println!("{}", sanitized);
+
+        write_windows_clipboard(&sanitized);
+
+    } else if cfg!(target_os = "macos"){
+        let content = read_macos_clipboard();
+        let sanitized = sanitize_content(&content, &config.domains);
+        println!("Clipboard Inhalt:");
+        println!("{}", sanitized);
+        write_macos_clipboard(&sanitized);
+    }
+
 
 }
 
@@ -52,3 +63,23 @@ fn write_windows_clipboard(content: &str){
     child.stdin.as_mut().unwrap().write_all(content.as_bytes()).unwrap();
     child.wait().unwrap();
 }
+
+fn read_macos_clipboard() -> String {
+    let output = Command::new("pbpaste")
+        .output()
+        .unwrap();
+
+    String::from_utf8(output.stdout).unwrap()
+
+}
+
+fn write_macos_clipboard(content: &str){
+    let mut child = Command::new("pbcopy")
+        .stdin(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+
+    child.stdin.as_mut().unwrap().write_all(content.as_bytes()).unwrap();
+    child.wait().unwrap();
+}
+
