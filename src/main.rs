@@ -1,10 +1,12 @@
 use std::process::Command;
 use std::io::Write;
 use serde::Deserialize;
+use regex::Regex;
 
 #[derive(Deserialize)]
 struct Config {
     domains: Vec<String>,
+    words: Vec<String>,
 }
 
 fn main(){
@@ -20,7 +22,7 @@ fn main(){
 
     } else if cfg!(target_os = "macos"){
         let content = read_macos_clipboard();
-        let sanitized = sanitize_content(&content, &config.domains);
+        let sanitized = sanitize_content(&content, &config.domains, &config.words);
         println!("Clipboard Inhalt:");
         println!("{}", sanitized);
         write_macos_clipboard(&sanitized);
@@ -34,13 +36,16 @@ fn load_config() -> Config {
     serde_yaml::from_str(&config_content).unwrap()
 }
 
-fn sanitize_content(content: &str, domains: &[String]) -> String {
+fn sanitize_content(content: &str, domains: &[String], words: &[String]) -> String {
     let mut result = content.to_string();
-
+    
+    // Domains ersetzen
     for domain in domains {
         result = result.replace(domain, "example.com");
     }
-
+    
+    // Wörter entfernen
+    result = replace_word(result, words);
     result
 }
 
@@ -81,5 +86,15 @@ fn write_macos_clipboard(content: &str){
 
     child.stdin.as_mut().unwrap().write_all(content.as_bytes()).unwrap();
     child.wait().unwrap();
+}
+
+/* function for replacing specified words */
+fn replace_word(content: String, words: &[String]) -> String {
+    let mut result = content;
+    for word in words {
+        let re = Regex::new(word).unwrap();
+        result = re.replace_all(&result, "").to_string(); // Wörter entfernen
+    }
+    result
 }
 
