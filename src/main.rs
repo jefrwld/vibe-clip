@@ -47,20 +47,30 @@ fn main(){
 }
 
 fn load_config() -> Config {
-    let config_content = std::fs::read_to_string("config.yaml").unwrap();
-    serde_yaml::from_str(&config_content).unwrap()
+    let config_content = match std::fs::read_to_string("config.yaml") {
+        Ok(content) => content,
+        Err(_) => {
+            println!("Config file not found, using defaults");
+            return Config { domains: vec![], words: vec![] };
+        }
+    };
+    
+    match serde_yaml::from_str(&config_content) {
+        Ok(config) => config,
+        Err(_) => {
+            println!("Invalid config format, using defaults");
+            Config { domains: vec![], words: vec![] }
+        }
+    }
 }
 
 fn sanitize_content(content: &str, domains: &[String], words: &[String]) -> String {
     let mut result = content.to_string();
-    
-    // 1. Automatische Pattern-Erkennung (immer aktiv)
+
     result = sanitize_emails(&result);
     result = sanitize_api_keys(&result);
     result = sanitize_credit_cards(&result);
     result = sanitize_ip_addresses(&result);
-    
-    // 2. Custom Config-Regeln
     result = sanitize_domains(&result, domains);
     result = sanitize_words(&result, words);
     
