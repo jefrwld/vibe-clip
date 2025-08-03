@@ -7,3 +7,4 @@ edition = "2021"
 arboard = "3.6.0"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
+regex = "1.0"

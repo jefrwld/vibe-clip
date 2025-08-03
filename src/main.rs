@@ -14,7 +14,7 @@ fn main(){
 
     if cfg!(target_os = "windows"){
         let content = read_windows_clipboard();
-        let sanitized = sanitize_content(&content, &config.domains);
+        let sanitized = sanitize_content(&content, &config.domains, &config.words);
         println!("Clipboard Inhalt:");
         println!("{}", sanitized);
 
@@ -27,8 +27,6 @@ fn main(){
         println!("{}", sanitized);
         write_macos_clipboard(&sanitized);
     }
-
-
 }
 
 fn load_config() -> Config {
@@ -93,7 +91,8 @@ fn replace_word(content: String, words: &[String]) -> String {
     let mut result = content;
     for word in words {
         let re = Regex::new(word).unwrap();
-        result = re.replace_all(&result, "").to_string(); // Wörter entfernen
+        result = re.replace_all(&result, "[ERSETZT]").to_string();
+
     }
     result
 }
