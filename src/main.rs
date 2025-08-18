@@ -1,10 +1,9 @@
 use std::process::Command;
-use std::io::Write;
+use std::io::{self, Write};
 use std::time::Duration;
 use std::thread;
 use serde::Deserialize;
 use regex::Regex;
-
 #[derive(Deserialize)]
 struct Config {
     domains: Vec<String>,
@@ -19,9 +18,15 @@ fn main(){
     
     loop {
         let current_content = if cfg!(target_os = "windows") {
-            read_windows_clipboard()
+            read_windows_clipboard().unwrap_or_else(|e| {
+                eprintln!("Error reading clipboard: {}", e);
+                String::new()
+            })
         } else if cfg!(target_os = "macos") {
-            read_macos_clipboard()
+            read_macos_clipboard().unwrap_or_else(|e| {
+                eprintln!("Error reading clipboard: {}", e);
+                String::new()
+            })
         } else {
             String::new()
         };
@@ -78,32 +83,37 @@ fn sanitize_content(content: &str, domains: &[String], words: &[String]) -> Stri
 }
 
 
-fn read_windows_clipboard() -> String {
+fn read_windows_clipboard() -> Result<String, io::Error>{
     let output = Command::new("powershell.exe")
         .args(&["-Command", "Get-Clipboard"])
-        .output()
-        .unwrap();
-
-    String::from_utf8(output.stdout).unwrap()
+        .output()?;
+    let text = String::from_utf8(output.stdout)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    Ok(text)
 }
 
-fn write_windows_clipboard(content: &str){
+fn write_windows_clipboard(content: &str) -> Result<(), io::Error>{
     let mut child = Command::new("clip.exe")
         .stdin(std::process::Stdio::piped())
-        .spawn()
-        .unwrap();
+        .spawn()?;
 
-    child.stdin.as_mut().unwrap().write_all(content.as_bytes()).unwrap();
-    child.wait().unwrap();
+    if let Some(stdin) = child.stdin.as_mut() {
+        stdin.write_all(content.as_bytes())?;
+    } else {
+        return Err(io::Error::new(io::ErrorKind::Other, "Failed to open stdin"));
+    }
+
+    child.wait()?;
+    Ok(())
 }
 
-fn read_macos_clipboard() -> String {
+fn read_macos_clipboard() -> Result<String, io::Error> {
     let output = Command::new("pbpaste")
-        .output()
-        .unwrap();
+        .output()?;
 
-    String::from_utf8(output.stdout).unwrap()
-
+    let text = String::from_utf8(output.stdout)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    Ok(text)
 }
 
 fn write_macos_clipboard(content: &str){
