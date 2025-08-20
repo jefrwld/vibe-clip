@@ -38,9 +38,15 @@ fn main(){
                 println!("Clipboard sanitized!");
                 
                 if cfg!(target_os = "windows") {
-                    write_windows_clipboard(&sanitized);
+                    match write_windows_clipboard(&sanitized) {
+                        Ok(()) => {},
+                        Err(e) => eprintln!("could not write to clipboard: {}", e)
+                    }
                 } else if cfg!(target_os = "macos") {
-                    write_macos_clipboard(&sanitized);
+                    match write_macos_clipboard(&sanitized) {
+                        Ok(()) => {},
+                        Err(e) => eprintln!("could not write to clipboard: {}", e)
+                    }
                 }
             }
             
@@ -116,14 +122,18 @@ fn read_macos_clipboard() -> Result<String, io::Error> {
     Ok(text)
 }
 
-fn write_macos_clipboard(content: &str){
+fn write_macos_clipboard(content: &str) -> Result<(), io::Error>{
     let mut child = Command::new("pbcopy")
         .stdin(std::process::Stdio::piped())
-        .spawn()
-        .unwrap();
+        .spawn()?;
 
-    child.stdin.as_mut().unwrap().write_all(content.as_bytes()).unwrap();
-    child.wait().unwrap();
+    if let Some(stdin) = child.stdin.as_mut() {
+        stdin.write_all(content.as_bytes())?;
+    } else {
+        return Err(io::Error::new(io::ErrorKind::Other, "Failed to open stdin"));
+    }
+    child.wait()?;
+    Ok(())
 }
 
 /* Pattern-based sanitization functions */
