@@ -14,6 +14,17 @@ fn main(){
     let config = load_config();
     let mut last_content = String::new();
     
+    // OS Detection Debug
+    if cfg!(target_os = "windows") {
+        println!("DEBUG: Detected OS: Windows");
+    } else if cfg!(target_os = "macos") {
+        println!("DEBUG: Detected OS: macOS");
+    } else if cfg!(target_os = "linux") {
+        println!("DEBUG: Detected OS: Linux");
+    } else {
+        println!("DEBUG: Detected OS: Unknown");
+    }
+    
     println!("Clipboard monitoring started. Press Ctrl+C to stop.");
     
     loop {
@@ -28,7 +39,18 @@ fn main(){
                 String::new()
             })
         } else {
-            String::new()
+            // Linux/WSL - try Windows clipboard via PowerShell
+            match Command::new("powershell.exe")
+                .args(&["-NoProfile", "-Command", "Get-Clipboard -Raw"])
+                .output() {
+                Ok(output) if output.status.success() => {
+                    String::from_utf8(output.stdout)
+                        .unwrap_or_default()
+                        .trim_end()
+                        .to_string()
+                }
+                Ok(_) | Err(_) => String::new()
+            }
         };
         
         if current_content != last_content && !current_content.is_empty() {
@@ -45,6 +67,19 @@ fn main(){
                 } else if cfg!(target_os = "macos") {
                     match write_macos_clipboard(&sanitized) {
                         Ok(()) => {},
+                        Err(e) => eprintln!("could not write to clipboard: {}", e)
+                    }
+                } else {
+                    // Linux/WSL - try Windows clipboard via clip.exe
+                    match Command::new("clip.exe")
+                        .stdin(std::process::Stdio::piped())
+                        .spawn() {
+                        Ok(mut child) => {
+                            if let Some(stdin) = child.stdin.as_mut() {
+                                let _ = stdin.write_all(sanitized.as_bytes());
+                            }
+                            let _ = child.wait();
+                        }
                         Err(e) => eprintln!("could not write to clipboard: {}", e)
                     }
                 }
