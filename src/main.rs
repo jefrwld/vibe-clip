@@ -4,6 +4,7 @@ use std::time::Duration;
 use std::thread;
 use serde::Deserialize;
 use regex::Regex;
+use rand::Rng;
 #[derive(Deserialize)]
 struct Config {
     domains: Vec<String>,
@@ -13,6 +14,8 @@ struct Config {
 fn main(){
     let config = load_config();
     let mut last_content = String::new();
+    let word = generate_word();
+    println!("word: {}", word);
     
     // OS Detection Debug
     if cfg!(target_os = "windows") {
@@ -219,5 +222,21 @@ fn sanitize_words(content: &str, words: &[String]) -> String {
         result = re.replace_all(&result, "[REPLACED]").to_string();
     }
     result
+}
+
+fn generate_word() -> String {
+    let adjectives = [
+        "funny", "strong", "stinky", "grumpy"
+    ];
+
+    let subjectives = [
+        "tree", "house", "mouse", "arm"
+    ];
+
+    let mut rng = rand::thread_rng();
+    let adjectiv = adjectives[rng.gen_range(0..adjectives.len())];
+    let subject = subjectives[rng.gen_range(0..subjectives.len())];
+
+    format!("{}--{}", adjectiv, subject)
 }
 
