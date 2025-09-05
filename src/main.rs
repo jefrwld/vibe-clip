@@ -225,12 +225,18 @@ fn sanitize_domains(content: &str, domains: &[String]) -> String {
 
 fn sanitize_words(content: &str, words: &[String], wordmap: &mut HashMap<String, String>) -> String {
     let mut result = content.to_string();
-    for word in words {
-        let random_var_name = generate_word();
-        let re = Regex::new(word).unwrap();
-        wordmap.insert(word.to_string(), random_var_name.to_string());
-        result = re.replace_all(&result, random_var_name).to_string();
-    }
+      for word in words {
+          let replacement = match wordmap.get(word) {
+              Some(existing) => existing.clone(),      // Verwende existierendes Mapping
+              None => {
+                  let new_word = generate_word();      // Generiere nur wenn neu
+                  wordmap.insert(word.to_string(), new_word.clone());
+                  new_word
+              }
+          };
+          let re = Regex::new(word).unwrap();
+          result = re.replace_all(&result, replacement).to_string();
+      }
     result
 }
 
