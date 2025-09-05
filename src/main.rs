@@ -5,6 +5,7 @@ use std::thread;
 use serde::Deserialize;
 use regex::Regex;
 use rand::Rng;
+use std::collections::HashMap;
 #[derive(Deserialize)]
 struct Config {
     domains: Vec<String>,
@@ -15,8 +16,15 @@ fn main(){
     let config = load_config();
     let mut last_content = String::new();
     let word = generate_word();
+
+
+
+    let mut wordmap: HashMap<String, String> = HashMap::new();
+
+
+
+
     println!("word: {}", word);
-    
     // OS Detection Debug
     if cfg!(target_os = "windows") {
         println!("DEBUG: Detected OS: Windows");
@@ -57,7 +65,7 @@ fn main(){
         };
         
         if current_content != last_content && !current_content.is_empty() {
-            let sanitized = sanitize_content(&current_content, &config.domains, &config.words);
+            let sanitized = sanitize_content(&current_content, &config.domains, &config.words, &mut wordmap);
             
             if sanitized != current_content {
                 println!("Clipboard sanitized!");
@@ -113,7 +121,7 @@ fn load_config() -> Config {
     }
 }
 
-fn sanitize_content(content: &str, domains: &[String], words: &[String]) -> String {
+fn sanitize_content(content: &str, domains: &[String], words: &[String], wordmap: &mut HashMap<String, String>) -> String {
     let mut result = content.to_string();
 
     result = sanitize_emails(&result);
@@ -121,7 +129,7 @@ fn sanitize_content(content: &str, domains: &[String], words: &[String]) -> Stri
     result = sanitize_credit_cards(&result);
     result = sanitize_ip_addresses(&result);
     result = sanitize_domains(&result, domains);
-    result = sanitize_words(&result, words);
+    result = sanitize_words(&result, words, wordmap);
     
     result
 }
@@ -215,11 +223,13 @@ fn sanitize_domains(content: &str, domains: &[String]) -> String {
     result
 }
 
-fn sanitize_words(content: &str, words: &[String]) -> String {
+fn sanitize_words(content: &str, words: &[String], wordmap: &mut HashMap<String, String>) -> String {
     let mut result = content.to_string();
     for word in words {
+        let random_var_name = generate_word();
         let re = Regex::new(word).unwrap();
-        result = re.replace_all(&result, "[REPLACED]").to_string();
+        wordmap.insert(word.to_string(), random_var_name.to_string());
+        result = re.replace_all(&result, random_var_name).to_string();
     }
     result
 }
