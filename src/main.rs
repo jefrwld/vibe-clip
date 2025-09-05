@@ -253,6 +253,6 @@ fn generate_word() -> String {
     let adjectiv = adjectives[rng.gen_range(0..adjectives.len())];
     let subject = subjectives[rng.gen_range(0..subjectives.len())];
 
-    format!("{}--{}", adjectiv, subject)
+    format!("{} {}", adjectiv, subject)
 }
 
