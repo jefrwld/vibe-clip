@@ -229,7 +229,7 @@ fn sanitize_words(content: &str, words: &[String], wordmap: &mut HashMap<String,
           let replacement = match wordmap.get(word) {
               Some(existing) => existing.clone(),      // Verwende existierendes Mapping
               None => {
-                  let new_word = generate_word();      // Generiere nur wenn neu
+                  let new_word = generate_unique_word(wordmap);      // Generiere eindeutiges Wort
                   wordmap.insert(word.to_string(), new_word.clone());
                   new_word
               }
@@ -254,5 +254,16 @@ fn generate_word() -> String {
     let subject = subjectives[rng.gen_range(0..subjectives.len())];
 
     format!("{} {}", adjectiv, subject)
+}
+
+fn generate_unique_word(wordmap: &HashMap<String, String>) -> String {
+    loop {
+        let new_word = generate_word();
+        // Prüfe ob das generierte Wort bereits als Replacement existiert
+        if !wordmap.values().any(|v| v == &new_word) {
+            return new_word;
+        }
+        // Falls schon verwendet, generiere ein neues
+    }
 }
 
