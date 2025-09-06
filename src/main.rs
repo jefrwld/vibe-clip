@@ -6,6 +6,26 @@ use serde::Deserialize;
 use regex::Regex;
 use rand::Rng;
 use std::collections::HashMap;
+use clap::{Parser, Subcommand};
+
+
+#[derive(Parser)]
+#[command(author, version, about)]
+struct Cli {
+  #[command(subcommand)]
+  command: Option<Commands>,
+
+  #[arg(short, long, default_value = "config.yaml")]
+  config: String,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+  Start,
+  Stop,
+  Init,
+}
+
 #[derive(Deserialize)]
 struct Config {
     domains: Vec<String>,
@@ -17,12 +37,7 @@ fn main(){
     let mut last_content = String::new();
     let word = generate_word();
 
-
-
     let mut wordmap: HashMap<String, String> = HashMap::new();
-
-
-
 
     println!("word: {}", word);
     // OS Detection Debug
@@ -227,9 +242,9 @@ fn sanitize_words(content: &str, words: &[String], wordmap: &mut HashMap<String,
     let mut result = content.to_string();
       for word in words {
           let replacement = match wordmap.get(word) {
-              Some(existing) => existing.clone(),      // Verwende existierendes Mapping
+              Some(existing) => existing.clone(),      
               None => {
-                  let new_word = generate_unique_word(wordmap);      // Generiere eindeutiges Wort
+                  let new_word = generate_unique_word(wordmap);    
                   wordmap.insert(word.to_string(), new_word.clone());
                   new_word
               }
@@ -253,17 +268,15 @@ fn generate_word() -> String {
     let adjectiv = adjectives[rng.gen_range(0..adjectives.len())];
     let subject = subjectives[rng.gen_range(0..subjectives.len())];
 
-    format!("{} {}", adjectiv, subject)
+    format!("{}_{}", adjectiv, subject)
 }
 
 fn generate_unique_word(wordmap: &HashMap<String, String>) -> String {
     loop {
         let new_word = generate_word();
-        // Prüfe ob das generierte Wort bereits als Replacement existiert
         if !wordmap.values().any(|v| v == &new_word) {
             return new_word;
         }
-        // Falls schon verwendet, generiere ein neues
     }
 }
 
