@@ -22,8 +22,6 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
   Start,
-  Stop,
-  Init,
 }
 
 #[derive(Deserialize)]
@@ -33,6 +31,28 @@ struct Config {
 }
 
 fn main(){
+   let cli = Cli::parse();
+   match cli.command {
+        Some(Commands::Start) => {
+           start_monitoring(); 
+        }
+        None => {
+           start_monitoring(); 
+        }
+   }
+   
+}
+
+fn start_monitoring() {
+    println!(r#"
+__     ___ _             ____ _ _       
+\ \   / (_) |__   ___   / ___| (_)_ __  
+ \ \ / /| | '_ \ / _ \ | |   | | | '_ \ 
+  \ V / | | |_) |  __/ | |___| | | |_) |
+   \_/  |_|_.__/ \___|  \____|_|_| .__/ 
+                                 |_|                                 
+"#);
+    
     let config = load_config();
     let mut last_content = String::new();
     let word = generate_word();
@@ -113,11 +133,9 @@ fn main(){
             
             last_content = sanitized;
         }
-        
         thread::sleep(Duration::from_millis(100));
     }
-}
-
+} 
 fn load_config() -> Config {
     let config_content = match std::fs::read_to_string("config.yaml") {
         Ok(content) => content,
